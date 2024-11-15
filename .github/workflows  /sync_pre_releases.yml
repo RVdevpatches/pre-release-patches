@@ -1,0 +1,80 @@
+name: Sync Latest Pre-Release with Assets
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Every hour
+  workflow_dispatch:
+
+jobs:
+  sync_latest_pre_release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Get latest pre-release from source repository
+      env:
+        SOURCE_REPO: "ReVanced/revanced-patches"
+        DEST_REPO: "rv-dev-patches/pre-release-patches"
+        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+      run: |
+        # Retrieve the latest pre-release from the source repository
+        latest_pre_release=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$SOURCE_REPO/releases?per_page=1" | jq '[.[] | select(.prerelease == true)][0]')
+
+        # Check if a pre-release exists
+        if [ "$latest_pre_release" == "null" ]; then
+          echo "No pre-release available in the source repository."
+          exit 0
+        fi
+
+        release_tag=$(echo "$latest_pre_release" | jq -r '.tag_name')
+
+        # Check if this release already exists in the destination repository
+        dest_releases=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$DEST_REPO/releases")
+        exists=$(echo "$dest_releases" | jq ".[] | select(.tag_name == \"$release_tag\")")
+
+        # If the release does not exist in the destination repository, create it
+        if [ -z "$exists" ]; then
+          release_name=$(echo "$latest_pre_release" | jq -r '.name')
+          release_body=$(echo "$latest_pre_release" | jq -r '.body')
+          release_id=$(echo "$latest_pre_release" | jq -r '.id')
+
+          # Create the release in the destination repository without assets
+          new_release=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$DEST_REPO/releases" \
+            -d "$(jq -n --arg tag "$release_tag" --arg name "$release_name" --arg body "$release_body" '{
+              tag_name: $tag,
+              name: $name,
+              body: $body,
+              draft: false,
+              prerelease: false
+            }')")
+
+          # Extract the new release ID in the destination repository
+          new_release_id=$(echo "$new_release" | jq -r '.id')
+
+          # Retrieve the assets of the pre-release from the source repository
+          assets=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/$SOURCE_REPO/releases/$release_id/assets")
+
+          # Download and add each asset to the new release
+          for asset_url in $(echo "$assets" | jq -r '.[].url'); do
+            asset_name=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Accept: application/vnd.github.v3+json" "$asset_url" | jq -r '.name')
+
+            # Download the asset
+            curl -L -o "$asset_name" -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Accept: application/octet-stream" "$asset_url"
+
+            # Upload the asset to the destination release
+            curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$asset_name" \
+              "https://uploads.github.com/repos/$DEST_REPO/releases/$new_release_id/assets?name=$asset_name"
+          done
+          
+          echo "The pre-release with tag $release_tag has been successfully published in the destination repository."
+        else
+          echo "The pre-release with tag $release_tag already exists in the destination repository."
+        fi
