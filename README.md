@@ -24,6 +24,6 @@ To use the development patches from this repository in ReVanced Manager:
    - For **Patches Organization**, enter `rv-dev-patches`.
    - For **Patches Source**, enter `pre-release-patches`.
 
-![Sources setup](Sources Setup.png)
+<img src="SourcesSetup.png" alt="Sources setup" width="350"/>
 
 ---
