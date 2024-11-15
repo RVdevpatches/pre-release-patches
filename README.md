@@ -21,9 +21,9 @@ To use the development patches from this repository in ReVanced Manager:
 1. Open ReVanced Manager, go to **Settings**.
 2. Toggle on **Use alternative sources**.
 3. Set the following values:
-   - For **Patches Organization**, enter `rv-dev-patches`.
+   - For **Patches Organization**, enter `rvdevpatches`.
    - For **Patches Source**, enter `pre-release-patches`.
 
-<img src="SourcesSetup.png" alt="Sources setup" width="350"/>
+<!-- <img src="SourcesSetup.png" alt="Sources setup" width="350"/> -->
 
 ---
