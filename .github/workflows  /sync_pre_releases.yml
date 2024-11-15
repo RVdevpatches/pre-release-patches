@@ -13,7 +13,7 @@ jobs:
     - name: Get latest pre-release from source repository
       env:
         SOURCE_REPO: "ReVanced/revanced-patches"
-        DEST_REPO: "rv-dev-patches/pre-release-patches"
+        DEST_REPO: "rvdevpatches/pre-release-patches"
         GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
       run: |
         # Retrieve the latest pre-release from the source repository
