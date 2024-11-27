@@ -18,7 +18,7 @@ jobs:
       run: |
         # Retrieve the latest pre-release from the source repository
         latest_pre_release=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$SOURCE_REPO/releases?per_page=1" | jq '[.[] | select(.prerelease == true)][0]')
+            "https://api.github.com/repos/$SOURCE_REPO/releases?per_page=10" | jq '[.[] | select(.prerelease == true)][0]')
 
         # Check if a pre-release exists
         if [ "$latest_pre_release" == "null" ]; then
